@@ -39,12 +39,19 @@ cd backend && ../.venv/bin/uvicorn app.main:app --port 8000
 .venv/bin/pytest backend/tests
 ```
 
-To review a plan with a model, set `ANTHROPIC_API_KEY`, and optionally `REVIEW_MODEL`, then run:
+To generate a review, set `OPENAI_API_KEY` in your environment. The default model is
+`gpt-5.4`. Optionally set `REVIEW_MODEL` to an OpenAI Chat Completions model with
+strict JSON Schema support. From the repository root, run:
 
 ```sh
 mkdir -p out
 ./review data/plans/spring-market.md out/spring-market.json
 ```
+
+Use Git Bash on Windows with a virtual environment at `.venv/Scripts`.
+The command reads UTF-8, checks every quotation against the plan, and replaces
+the destination only after validation succeeds. A non-zero exit indicates failure.
+Any existing destination keeps its previous contents.
 
 The `Dockerfile` builds one container that serves the page and the API on `$PORT`, 8000 by default.
 
@@ -73,7 +80,7 @@ This checks the shape and the scheduling rules. It does not check quotes against
 ## Models and AI tools
 
 - Use any model with your own key, live from the app or offline. Your choice; tell us why in the note.
-- No key? OpenRouter has a free model you can use, also for AI features in the app: [nvidia/nemotron-3.5-super-vl:free](https://openrouter.ai/nvidia/nemotron-3.5-super-vl:free). A free OpenRouter account is enough. The starter calls Anthropic, so using it means switching the provider call.
+- No key? The assignment also permits OpenRouter, including [nvidia/nemotron-3.5-super-vl:free](https://openrouter.ai/nvidia/nemotron-3.5-super-vl:free). Using it would require switching the provider call. The implemented review command uses OpenAI.
 - Keep your review outputs for the three sample plans in `data/reviews/`, under the same file names. They are what your `./review` wrote, not edited by hand.
 - Name the environment variables your review command needs in the note. If we cannot run your model, we judge the AI part on your code and those outputs.
 - How the page uses AI is up to you. We judge it on whether it helps her decide.

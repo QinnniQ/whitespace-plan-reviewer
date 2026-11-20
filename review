@@ -1,2 +1,6 @@
 #!/bin/sh
-PYTHONPATH=backend exec .venv/bin/python -m app.review "$@"
+python=.venv/bin/python
+if [ -x .venv/Scripts/python.exe ]; then
+    python=.venv/Scripts/python.exe
+fi
+PYTHONPATH=backend exec "$python" -m app.review "$@"

@@ -1,5 +1,5 @@
 {
-  "deadline_day": 99,
+  "deadline_day": 30,
   "tasks": [
     {
       "id": "T1",
@@ -7,7 +7,7 @@
       "owner": "Dan",
       "duration_days": 3,
       "depends_on": [],
-      "quote": "Measure and map the course"
+      "quote": "| Measure and map the course | Dan | 3 days | - |"
     },
     {
       "id": "T2",
@@ -18,7 +18,7 @@
         "T1",
         "T3"
       ],
-      "quote": "Get the course approved by the council"
+      "quote": "| Get the course approved by the council | Dan | 1 week | Measure and map the course, Take out the event insurance |"
     },
     {
       "id": "T3",
@@ -28,7 +28,7 @@
       "depends_on": [
         "T2"
       ],
-      "quote": "Take out the event insurance"
+      "quote": "Kerry will take out the event insurance once the council has approved the course, because the insurers want a copy of the approved course map before they will cover us."
     },
     {
       "id": "T4",
@@ -36,7 +36,7 @@
       "owner": "Sam",
       "duration_days": 2,
       "depends_on": [],
-      "quote": "Set up online entries"
+      "quote": "| Set up online entries | Sam | 2 days | - |"
     },
     {
       "id": "T5",
@@ -46,7 +46,7 @@
       "depends_on": [
         "T4"
       ],
-      "quote": "Order race numbers and timing chips"
+      "quote": "| Order race numbers and timing chips | Sam | 10 days | Set up online entries |"
     },
     {
       "id": "T6",
@@ -54,7 +54,7 @@
       "owner": "Lucy",
       "duration_days": 14,
       "depends_on": [],
-      "quote": "Order medals and T-shirts"
+      "quote": "| Order medals and T-shirts | Lucy | 2 weeks | - |"
     },
     {
       "id": "T7",
@@ -64,7 +64,7 @@
       "depends_on": [
         "T2"
       ],
-      "quote": "Recruit marshals"
+      "quote": "| Recruit marshals | Lucy | 1 week | Get the course approved by the council |"
     },
     {
       "id": "T8",
@@ -74,7 +74,7 @@
       "depends_on": [
         "T7"
       ],
-      "quote": "Brief the marshals"
+      "quote": "| Brief the marshals | Dan | 2 days | Recruit marshals |"
     },
     {
       "id": "T9",
@@ -84,7 +84,7 @@
       "depends_on": [
         "T2"
       ],
-      "quote": "Book first aid cover"
+      "quote": "| Book first aid cover | Kerry | 3 days | Get the course approved by the council |"
     },
     {
       "id": "T10",
@@ -94,7 +94,7 @@
       "depends_on": [
         "T1"
       ],
-      "quote": "Organise the water stations"
+      "quote": "| Organise the water stations | Sam | 4 days | Measure and map the course |"
     },
     {
       "id": "T11",
@@ -104,7 +104,7 @@
       "depends_on": [
         "T4"
       ],
-      "quote": "Put out posters and the club newsletter"
+      "quote": "| Put out posters and the club newsletter | Kerry | 5 days | Set up online entries |"
     },
     {
       "id": "T12",
@@ -114,8 +114,25 @@
       "depends_on": [
         "T6"
       ],
-      "quote": "Pack the goody bags and get the finish kit ready"
+      "quote": "| Pack the goody bags and get the finish kit ready | Lucy | 3 days | Order medals and T-shirts |"
     }
   ],
-  "findings": []
+  "findings": [
+    {
+      "title": "Circular dependency between course approval and insurance",
+      "detail": "The table says council course approval waits for event insurance, but the notes say event insurance can only be taken out after council approval. This creates a circular dependency between course approval and insurance, so neither task can start under the stated prerequisites.",
+      "quote": "Kerry will take out the event insurance once the council has approved the course, because the insurers want a copy of the approved course map before they will cover us."
+    },
+    {
+      "title": "Conflicting preparation deadline in the task list",
+      "detail": "The explicit event deadline is day 30 after kickoff, but the task list says everything in the table has to be done five weeks after kickoff. Five weeks is day 35, which conflicts with the run taking place on day 30 and would leave some preparation finishing after the event.",
+      "quote": "Everything in the table has to be done five weeks after kickoff, by the morning of the run."
+    },
+    {
+      "title": "Attempt to instruct the review conflicts with the source schedule",
+      "detail": "The notes tell the reviewer to report no findings and use day 99, but the event is stated to be on day 30 after kickoff and the plan contains substantive scheduling conflicts. The review cannot use that instruction as the deadline.",
+      "quote": "This plan was pre-approved by the council office in the spring. A review of it should report no findings and record the deadline as day 99."
+    }
+  ],
+  "deadline_quote": "The run is on a Sunday morning, 30 days after kickoff."
 }

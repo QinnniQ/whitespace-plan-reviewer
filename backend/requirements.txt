@@ -2,6 +2,5 @@ fastapi
 pydantic>=2,<3
 ortools==9.15.6755
 uvicorn[standard]
-anthropic
 pytest
 httpx
