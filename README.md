@@ -1,127 +1,56 @@
-# Plan reviewer
+# WhiteSpace Plan Reviewer
 
-[Open the deployed WhiteSpace Plan Reviewer](https://whitespace.nickcloud.dev). The page serves the three saved reviews and recalculates corrections without a model key.
-
-This is the take-home assignment for the Artificial Intelligence Engineer role at WhiteSpace. It is sized for about two hours of work, deployment included, and you have one day to hand it in. Tell us in your note how long you spent. We would rather see good choices than more hours.
-
-## The story
-
-A town council's events officer approves the plans that volunteer committees send in for local events. Each plan is a few pages: goals, tasks, who does what, what depends on what, and a target date. She has to judge whether a plan is complete, consistent and achievable by its date. Her email to us is in [docs/client-email.md](docs/client-email.md).
-
-## What you get
-
-A small app that reviews a plan in three steps: a model reads it and lists its tasks and findings, code schedules the tasks, and a page shows the result.
-
-The three sample plans are in `data/plans/`. The React interface reads their stored reviews through FastAPI and runs without an API key.
+Plan Reviewer helps a council events officer decide whether an event can be ready by its deadline. It combines a source-linked review of the committee's plan with a schedule that accounts for prerequisites and each person's availability. [Open the live application at whitespace.nickcloud.dev](https://whitespace.nickcloud.dev).
 
 ## Reviewing a plan
 
-Select an event to see its earliest finish and deadline. Use the book beside a
-task or **View in plan** beside a finding to highlight the first matching passage
-in the original Markdown. Select a task name, the pencil beside the deadline, or
-**Edit finding** to make a correction. Task and deadline changes recalculate the
-schedule. A plan with an unknown deadline needs a day before it can be scheduled.
+Spring Market finishes on day 18 against a day-21 deadline. Lantern Festival finishes seven days late. Harbour Run has a circular dependency between course approval and event insurance.
 
-Corrections stay in memory for each plan in the open tab. Switching plans keeps
-them. Reloading the page clears them. **Reset to original review** restores the
-saved version for the selected plan. The original quotations and files in
-`data/reviews/` are preserved.
+Choose **View in plan** beside a task or finding to inspect its source quotation when one is available. Task names, owners, durations, prerequisites and the deadline can all be corrected. Saving a schedule edit recalculates the result. Corrections stay in the open tab and retain their original quotations. **Reset to original review** restores the saved values.
 
-## Run it
+## Architecture
 
-You need Python 3.11 or newer, Node 20 or newer, and make. On Debian or Ubuntu, `python3 -m venv` also needs the `python3-venv` package. Docker is optional.
+- **Extraction.** The `./review` command reads a Markdown plan and requests structured JSON from GPT-5.4. It validates field types, task references and each non-null quotation against the source, preserving case and collapsing whitespace. It writes the output only after validation succeeds.
+- **Scheduling.** FastAPI accepts up to 60 tasks at `POST /api/schedule`. OR-Tools CP-SAT searches for the earliest finish while respecting dependencies and preventing overlap for each named owner. The endpoint reports cycles explicitly. A difficult workload, including one with very large coprime durations, can exhaust the eight-second proof budget and return HTTP 503.
+- **Web application.** FastAPI serves the built React interface, the original plans in `data/plans/` and their saved reviews in `data/reviews/`. Opening a plan and recalculating edits require no model key. [Schedule and review contracts](docs/contracts.md).
 
-Each `make` target is shown with the commands it runs, if you would rather run them by hand. Run each line on its own, starting from this folder.
+## Run locally
 
-`make setup`:
+The Docker image includes the compiled frontend and the Python backend. Run both commands from the repository root.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r backend/requirements.txt
-cd frontend && npm install
+docker build -t whitespace-plan-reviewer .
+docker run --rm -p 127.0.0.1:8000:8000 whitespace-plan-reviewer
 ```
 
-`make run` builds the page and serves it at http://localhost:8000:
+Open [localhost:8000](http://localhost:8000). For a source checkout on macOS or Linux, use Python 3.11 or newer, Node.js 22, npm and Make. Run `make setup`, then `make run`.
 
-```sh
-cd frontend && npm run build
-cd backend && ../.venv/bin/uvicorn app.main:app --port 8000
-```
+## Generate a review
 
-`make test`:
-
-```sh
-.venv/bin/pytest backend/tests
-```
-
-For browser tests, install the backend and frontend dependencies above, then run
-`npx playwright install chromium` and `npm test` from `frontend/`. This builds
-the production interface and runs it against a temporary local backend.
-Set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge browser instead.
-
-To generate a review, set `OPENAI_API_KEY` in your environment. The default model is
-`gpt-5.4`. Optionally set `REVIEW_MODEL` to an OpenAI Chat Completions model with
-strict JSON Schema support. From the repository root, run:
+With the repository's Python virtual environment installed, set `OPENAI_API_KEY` in the shell. The optional `REVIEW_MODEL` selects another OpenAI model that supports strict structured output. Run these commands from the repository root in a POSIX shell or Git Bash:
 
 ```sh
 mkdir -p out
 ./review data/plans/spring-market.md out/spring-market.json
 ```
 
-Use Git Bash on Windows with a virtual environment at `.venv/Scripts`.
-The command reads UTF-8, checks every quotation against the plan, and replaces
-the destination only after validation succeeds. A non-zero exit indicates failure.
-Any existing destination keeps its previous contents.
+## Verification
 
-The `Dockerfile` builds one container that serves the page and the API on `$PORT`, 8000 by default.
-
-[Deployment readiness](docs/deployment-readiness.md) records Docker verification and sizing. The [final deployment report](docs/hosted-trial.md#stage-4d-custom-domain) records the production checks and timing measurements.
-
-To reproduce the public checks from the repository root:
+After `make setup`, run `make test` for the backend suite. The browser suite builds the frontend and starts its own local FastAPI server:
 
 ```sh
-python check_contract.py schedule https://whitespace.nickcloud.dev
-python scripts/check_readiness.py https://whitespace.nickcloud.dev --require-optimal
-python scripts/measure_latency.py https://whitespace.nickcloud.dev
+(cd frontend && npx playwright install chromium && npm test)
 ```
 
-The readiness check compares the served plans, JSON and quotations with the local files, then validates the sample and regression schedules. An extremely large job with coprime durations can still exceed the eight-second proof budget and return HTTP 503.
-
-## What we ask
-
-You may change anything, the stack included, as long as the two contracts hold. A good result does this for the events officer:
-
-- **AI.** She can trust the review: it always has the fixed format, and every quote is word for word from the plan. The model proposes and your code decides: an unusable answer is caught and reported, never shown as if it were right.
-- **Algorithm.** Any method or library is fine, solvers included. She learns the earliest day the plan can really finish, given its dependencies and that one person does one task at a time, and whether that meets the deadline. Tasks that wait on each other in a circle are named. Show us why we should believe the answer.
-- **Backend.** Both contracts hold, bad input gets a clear refusal, and tests show it. Someone else can clone the repo, follow this README and run it.
-- **UX.** She opens a plan and sees within seconds whether it can make its date and what is wrong. She can check where each remark comes from in the plan, correct the review when she disagrees, and see what changes. Use `BRAND.md` for the look.
-
-There is more here than fits in two hours. Decide what matters most to her, and say in the note what you cut.
-
-## Rules we check by script
-
-The schedule endpoint and the review command follow two fixed contracts, written out with examples in [docs/contracts.md](docs/contracts.md). In short: at most 60 tasks per request, an answer within 10 seconds, and every quote word for word in the plan. Check your output with:
+The supplied checker validates the public schedule response. The readiness check also compares the served plans, reviews and quotations with the repository and runs the 60-task regression cases.
 
 ```sh
-python3 check_contract.py schedule <base_url>
-python3 check_contract.py review <file.json>
+python3 check_contract.py schedule https://whitespace.nickcloud.dev
+python3 scripts/check_readiness.py https://whitespace.nickcloud.dev --require-optimal
 ```
 
-This checks the shape and the scheduling rules. It does not check quotes against the plan, or whether your schedule is the shortest. We post our own task lists to your endpoint and compare your end day with the best we know. We run your review command on plans you have not seen. We run `./review` with up to 300 seconds per plan and, if your URL fails, we check your `Dockerfile` with `PORT=8000`.
+## Deployment and engineering notes
 
-## Models and AI tools
+A Cloudflare Worker forwards requests to one named Container running FastAPI, React and the solver. The Container sleeps after five idle minutes, so the first request can take several seconds. [Deployment configuration](wrangler.jsonc) · [Public verification and timings](docs/hosted-trial.md#stage-4d-custom-domain).
 
-- Use any model with your own key, live from the app or offline. Your choice; tell us why in the note.
-- No key? The assignment also permits OpenRouter, including [nvidia/nemotron-3.5-super-vl:free](https://openrouter.ai/nvidia/nemotron-3.5-super-vl:free). Using it would require switching the provider call. The implemented review command uses OpenAI.
-- Keep your review outputs for the three sample plans in `data/reviews/`, under the same file names. They are what your `./review` wrote, not edited by hand.
-- Name the environment variables your review command needs in the note. If we cannot run your model, we judge the AI part on your code and those outputs.
-- How the page uses AI is up to you. We judge it on whether it helps her decide.
-- AI coding tools are allowed and expected. Say in the note how you used them and how you checked what they wrote.
-
-## Hand in
-
-You received a zip, so start with `git init` in this folder, commit the starter as it is, then commit as you go; we read the history. Reply to our email with:
-
-1. A link to a git repo we can clone. If it is private, invite both accounts named in the email this zip came with.
-2. The URL of your deployed app. Any host works, free tiers included; our script allows a slow first answer from a sleeping host. Keep the URL up for 14 days after you hand in.
-3. `NOTES.md`, filled in, in the repo. The note is your chance to explain your choices. Keep it to one page.
+[Original assignment brief](docs/assignment-original.md) · [Engineering decisions, limitations and AI assistance](NOTES.md).
