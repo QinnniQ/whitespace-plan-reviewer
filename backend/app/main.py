@@ -2,15 +2,21 @@ import json
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .scheduler import schedule
+from .scheduler import ScheduleRequest, ScheduleTimeout, build_schedule, schedule
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
 DIST = ROOT / "frontend" / "dist"
 
 app = FastAPI()
+
+
+@app.exception_handler(ScheduleTimeout)
+async def scheduling_timeout(request, exc):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
 @app.get("/api/plans")
@@ -35,8 +41,8 @@ def get_plan(plan_id: str):
 
 
 @app.post("/api/schedule")
-def post_schedule(body: dict):
-    return schedule(body["tasks"], body["deadline_day"])
+def post_schedule(body: ScheduleRequest):
+    return build_schedule(body)
 
 
 if DIST.exists():
