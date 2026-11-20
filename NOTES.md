@@ -18,11 +18,11 @@ Corrections stay in the open tab. This supports checking alternatives and resett
 
 ## What is not ready
 
-Quote matching verifies the passage's existence. Completeness and interpretation still need editorial judgment. Difficult schedules can exhaust the eight-second search budget and return HTTP 503. Hosted cold-start and concurrent-request latency still need measurement.
+Quote matching verifies the passage's existence. Completeness and interpretation still need editorial judgment. Two valid 60-task schedules exhausted the hosted eight-second proof budget. Cloudflare's trial hostname also rejected the assignment checker's default Python client.
 
 ## What I would do next and a rough estimate
 
-Allow half a day to measure cold and warm requests on the chosen host and build a small labelled set of unseen plans to test missed tasks, conflicting dates and unsupported findings.
+Allow a day to prototype exact duration scaling and tighter scheduling bounds, test against the saved hard cases, and verify the final hostname with the original checker. A small labelled set of unseen plans would help measure missed tasks and unsupported findings.
 
 ## How I used AI tools
 

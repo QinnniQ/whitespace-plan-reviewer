@@ -1,5 +1,7 @@
 {
-  "name": "whitespace-plan-reviewer",
+  "name": "whitespace-plan-reviewer-trial",
+  "workers_dev": true,
+  "preview_urls": false,
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-11-20",
   "containers": [{

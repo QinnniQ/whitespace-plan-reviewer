@@ -73,7 +73,7 @@ Any existing destination keeps its previous contents.
 
 The `Dockerfile` builds one container that serves the page and the API on `$PORT`, 8000 by default.
 
-[Deployment readiness](docs/deployment-readiness.md) records local Docker verification, Cloudflare sizing and costs, and the remaining hosted checks.
+[Deployment readiness](docs/deployment-readiness.md) records local Docker verification and sizing. The [hosted trial](docs/hosted-trial.md) records public browser tests, scheduling benchmarks and submission blockers.
 
 ## What we ask
 

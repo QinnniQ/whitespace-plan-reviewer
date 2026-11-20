@@ -61,6 +61,24 @@ test('Harbour Run shows the actual loop and edits its prerequisites and findings
   await expect(page.locator('mark')).toHaveText(passage);
 });
 
+test('a rejected correction displays the API error and can be retried', async ({ page }) => {
+  await page.goto('/');
+  await expect(assessment(page)).toContainText('On track');
+  await page.getByRole('button', { name: 'Edit deadline' }).click();
+  await page.getByLabel('Deadline day').fill('35');
+  // Change one outgoing request so the real backend exercises strict input validation.
+  await page.route('**/api/schedule', route => route.continue({
+    postData: JSON.stringify({ ...route.request().postDataJSON(), deadline_day: null }),
+  }), { times: 1 });
+  const posted = page.waitForResponse(r => r.url().endsWith('/api/schedule'));
+  await page.getByRole('button', { name: 'Save and recalculate' }).click();
+  expect((await posted).status()).toBe(422);
+  await expect(assessment(page)).toContainText('Check the task details and deadline');
+  await expect(assessment(page)).not.toContainText('On track');
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(assessment(page)).toContainText('On track');
+});
+
 test('missing deadline avoids scheduling until supplied; 503 hides all success and allows retry', async ({ page, request }) => {
   const plan: Plan = await (await request.get(spring)).json();
   plan.review.deadline_day = null;

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from time import perf_counter
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -32,27 +32,12 @@ def job_shop(jobs, steps, seed):
     return {"tasks": tasks, "deadline_day": 100}
 
 
-def signoff_windows():
-    """One officer must fit other work around signoffs between review rounds."""
-    tasks = []
+def check(base, require_optimal=False):
+    client = build_opener()
+    client.addheaders = [("User-Agent", "WhiteSpace-Readiness/1.0")]
 
-    def add(name, owner, duration, waits_for):
-        tasks.append({"id": name, "name": name, "owner": owner,
-                      "duration_days": duration, "depends_on": waits_for})
-
-    for i in range(12):
-        add(f"round-{i}", "Committee", 11, [f"sign-{i - 1}"] if i else [])
-        if i < 11:
-            add(f"sign-{i}", "Officer", 1, [f"round-{i}"])
-    for i, duration in enumerate([2, 4, 6] * 10 + [2] * 6):
-        add(f"inspection-{i}", "Officer", duration, [])
-    add("close", None, 1, [task["id"] for task in tasks])
-    return {"tasks": tasks, "deadline_day": 150}
-
-
-def check(base):
     def get(path):
-        with urlopen(base + path, timeout=15) as response:
+        with client.open(base + path, timeout=30) as response:
             return json.load(response)
 
     def post(label, body, *, allow_timeout=False):
@@ -60,10 +45,11 @@ def check(base):
                           headers={"Content-Type": "application/json"})
         start = perf_counter()
         try:
-            with urlopen(request, timeout=15) as response:
+            with client.open(request, timeout=15) as response:
                 result = json.load(response)
         except HTTPError as error:
-            if error.code != 503 or not allow_timeout:
+            if (error.code != 503 or not allow_timeout or
+                    json.load(error).get("detail") != "Could not prove the earliest finish within the scheduling time limit."):
                 raise
             result = None
         elapsed = perf_counter() - start
@@ -79,7 +65,7 @@ def check(base):
             raise ValueError(f"{label} exceeded the ten-second contract")
         return result
 
-    with urlopen(base + "/", timeout=15) as page:
+    with client.open(base + "/", timeout=30) as page:
         assert '<div id="root">' in page.read().decode()
     plans = get("/api/plans")
     expected = {"spring-market": 18, "lantern-festival": 52, "harbour-run": None}
@@ -106,17 +92,21 @@ def check(base):
             assert post("Spring Market correction", review)["end_day"] == 28
     print(f"Verified {quotes} source quotations.")
     for jobs, steps in [(6, 10), (10, 6), (15, 4)]:
-        post(f"{jobs} chains x {steps} owners (seed 42)", job_shop(jobs, steps, 42), allow_timeout=True)
-    post("Interleaved signoffs and inspections", signoff_windows(), allow_timeout=True)
-
-    # Also exercise the scheduler's exact, arbitrary-precision fallback.
-    large = job_shop(10, 6, 42)
-    for task in large["tasks"]:
-        task["duration_days"] *= 10**24
-    post("Large-integer stress case", large, allow_timeout=True)
+        post(f"{jobs} chains x {steps} owners (seed 42)", job_shop(jobs, steps, 42),
+             allow_timeout=not require_optimal)
+    for name, optimum in [("signoff-windows", 150), ("large-job-shop", 123 * 10**24)]:
+        fixture = ROOT / "backend/tests/fixtures" / f"{name}.json"
+        result = post(name, json.loads(fixture.read_text()), allow_timeout=not require_optimal)
+        if result is not None and result["end_day"] != optimum:
+            raise ValueError(f"{name} has a proven optimum of {optimum}")
 
 
 if __name__ == "__main__":
+    if not __debug__:
+        sys.exit("Run without python -O so all contract assertions are checked.")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("base_url")
-    check(parser.parse_args().base_url.rstrip("/"))
+    parser.add_argument("--require-optimal", action="store_true",
+                        help="Fail if any 60-task workload times out.")
+    args = parser.parse_args()
+    check(args.base_url.rstrip("/"), args.require_optimal)

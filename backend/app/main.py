@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
+from time import perf_counter
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -52,8 +53,11 @@ def get_plan(plan_id: str):
 
 
 @app.post("/api/schedule")
-def post_schedule(body: ScheduleRequest):
-    return build_schedule(body)
+def post_schedule(body: ScheduleRequest, response: Response):
+    started = perf_counter()
+    result = build_schedule(body)
+    response.headers["Server-Timing"] = f"schedule;dur={(perf_counter() - started) * 1000:.2f}"
+    return result
 
 
 if DIST.exists():

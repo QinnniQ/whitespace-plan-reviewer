@@ -37,7 +37,6 @@ export class PlanReviewer extends DurableObject {
   async fetch(request) {
     const url = new URL(request.url);
     const timedSolve = request.method === "POST" && url.pathname === "/api/schedule";
-    const signal = timedSolve ? AbortSignal.timeout(9000) : request.signal;
     try {
       if (!this.ctx.container.running) this.ready = false;
       if (!this.ready) {
@@ -49,6 +48,8 @@ export class PlanReviewer extends DurableObject {
       url.host = "container";
       const forwarded = new Request(url, request);
       forwarded.headers.delete("host");
+      // A sleeping host may wake slowly. Give the application its full solve budget.
+      const signal = timedSolve ? AbortSignal.timeout(9000) : request.signal;
       return await this.ctx.container.getTcpPort(8000).fetch(forwarded, { signal });
     } catch {
       this.ready = false;
