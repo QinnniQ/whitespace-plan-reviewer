@@ -2,32 +2,32 @@
 
 ## Time spent
 
-[To confirm before submission: ___ hours of hands-on direction and review; ___ hours of automated execution and environment troubleshooting.]
+Approximately **2 hours of hands-on engineering direction and review**, excluding additional automated execution and environment troubleshooting, which were not separately tracked.
 
 ## What I did
 
-I made Nora's deadline decision the starting point. She can see the earliest finish, inspect a highlighted passage, correct a task and recalculate. Each correction keeps the original quotation so she can compare her change with the plan.
+I made Nora's deadline decision the starting point. She can see the earliest finish, inspect a highlighted source passage, correct a task and recalculate. Each correction retains the original quotation so she can compare her changes against the plan.
 
-I chose CP-SAT because a greedy task order can delay a short handoff that would free another owner to start work. The solver considers alternative orders and reports a finish day only when it can prove optimality. Shared duration factors and bounds on each owner's work help it reach that proof.
+I selected CP-SAT because a greedy task order can delay a short handoff that would otherwise free another owner to begin work. The solver considers alternative task orders and reports a completion day only when optimality is proven. Stronger resource bounds and exact duration scaling help establish that proof efficiently.
 
-I chose GPT-5.4 after a smaller model followed Harbour Run's embedded day-99 instruction and missed an insurance dependency. The saved review identifies day 30 and the approval loop. I required a separate check on the model's output. The review command validates types, IDs and dependencies, then matches each quotation to the plan, preserving case and collapsing whitespace.
+The reviewer uses GPT-5.4 after an initial smaller model followed Harbour Run's embedded day-99 instruction and missed an insurance dependency. The corrected review identifies day 30 and the approval cycle. I required deterministic validation beyond the model's structured output: the review command checks field types, task IDs and dependencies, then verifies quotations against the original plan using case-sensitive, whitespace-normalised matching.
 
 ## What I cut and why
 
-I kept corrections in the open tab. Nora can try an alternative and reset it. Shared edits would need storage and rules about whose changes take precedence. Serving saved reviews also keeps model calls out of the web request.
+I kept corrections within the current browser session. Nora can explore alternatives and reset changes without introducing unnecessary persistence. Shared edits would require storage, access controls and conflict resolution. Serving saved reviews also keeps model calls out of the interactive workflow.
 
 ## What is not ready
 
-A matching quotation establishes that the passage exists. Nora still has to judge its meaning and spot omissions. A valid schedule with very large durations and no shared factor can exhaust the eight-second proof budget. The API returns HTTP 503 in that case.
+A matching quotation establishes that the passage exists, not that the model interpreted it correctly. Nora must still assess its meaning and identify omissions. Extremely large scheduling workloads without shared duration factors can also exhaust the eight-second optimality proof budget, in which case the API returns HTTP 503 rather than an unproven result.
 
 ## What I would do next and a rough estimate
 
-I would spend half a day labelling a small set of unseen plans and comparing their reviews for missed tasks, conflicting dates and unsupported findings.
+I would spend approximately half a day evaluating a labelled set of unseen plans, comparing extracted tasks, deadlines and findings against expected results to identify omissions, conflicting dates and unsupported conclusions.
 
 ## How I used AI tools
 
-I set the requirements and architectural constraints, directed the work in stages and evaluated the reported results at each milestone. Codex generated and refined the code and tests. It ran the exhaustive small-schedule comparisons, provider failure tests, live review generation, browser tests and contract checks.
+I defined the requirements and architectural constraints, directed implementation through incremental milestones and assessed the reported verification results before proceeding. Codex generated and refined the implementation and tests, including exhaustive small-schedule comparisons, provider failure tests, live review generation, browser tests and contract verification.
 
 ## Environment variables my review command needs
 
-`OPENAI_API_KEY` is required for generation. `REVIEW_MODEL` optionally selects another OpenAI Chat Completions model with strict structured-output support.
+`OPENAI_API_KEY` is required for review generation. `REVIEW_MODEL` optionally selects another OpenAI Chat Completions model supporting strict structured output.
