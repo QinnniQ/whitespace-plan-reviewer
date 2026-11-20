@@ -8,7 +8,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "backend"), str(ROOT)]
 
-from app.scheduler import schedule  # noqa: E402
+from app.scheduler import Task, _finish_lower_bound, schedule  # noqa: E402
 from check_contract import validate_schedule_response  # noqa: E402
 
 
@@ -102,16 +102,57 @@ def test_empty_schedule_and_negative_deadline():
     assert result["days_late"] == 1
 
 
+@pytest.mark.parametrize("unit", [1, 6, 10**80 + 7])
+def test_reconstructs_exact_days_and_compares_the_original_deadline(unit):
+    tasks = [task("handoff", 3 * unit, ["prep"], "Ada"), task("prep", 2 * unit)]
+    result = checked_schedule(tasks, 5 * unit - 1)
+    assert result["schedule"] == [
+        {"id": "handoff", "start_day": 2 * unit, "end_day": 5 * unit},
+        {"id": "prep", "start_day": 0, "end_day": 2 * unit},
+    ]
+    assert result["days_late"] == 1
+
+
+def test_reduced_horizon_can_still_require_arbitrary_precision():
+    large = 10**40
+    tasks = [task("a", 7 * large, owner="A"), task("b", 7 * (large + 1), owner="A")]
+    assert checked_schedule(tasks, 0)["end_day"] == 7 * (2 * large + 1)
+
+
+@pytest.mark.parametrize(("left", "right", "job_days", "optimum"), [
+    (3, 3, 2, 14),  # Best packing of three jobs is 2 + 4 days across the windows.
+    (4, 5, 3, 17),  # 3 + 6 days. The nearest multiple to five is above it.
+])
+def test_indivisible_work_with_a_shared_tail(left, right, job_days, optimum):
+    tasks = [task("x", left), task("gate", 2, ["x"], "A"), task("y", right, ["gate"])]
+    tasks += [task(str(i), job_days, owner="A") for i in range(3)]
+    tasks.append(task("close", 5, [t["id"] for t in tasks], "B"))
+    assert _finish_lower_bound([Task(**t) for t in tasks]) == optimum
+    assert checked_schedule(tasks, optimum)["end_day"] == optimum
+
+
+def test_work_outside_a_join_can_overlap_its_tail():
+    tasks = [task("x", 3), task("gate", 2, ["x"], "A"), task("y", 3, ["gate"]),
+             task("close", 5, ["y"], "B"), task("unrelated", 10, owner="A")]
+    assert checked_schedule(tasks, 15)["end_day"] == 15
+
+
 def test_small_schedules_against_exhaustive_day_assignments():
     rng = Random(42)
-    for _ in range(20):
+    for case in range(80):
         tasks = [
             task(str(i), rng.randint(1, 3), [str(j) for j in range(i) if rng.random() < 0.3],
                  rng.choice(["Ann", "Bob", None]))
             for i in range(4)
         ]
+        bound = _finish_lower_bound([Task(**t) for t in tasks])
         rng.shuffle(tasks)
         finish = checked_schedule(tasks, 10)["end_day"]
+        assert bound <= finish
+        if case % 2 == 0:
+            unit = 10**30 + case + 1
+            scaled = [t | {"duration_days": t["duration_days"] * unit} for t in tasks]
+            assert checked_schedule(scaled, 10)["end_day"] == finish * unit
         # Independently try every way to finish at least one day sooner.
         domains = [range(finish - t["duration_days"]) for t in tasks]
         for days in product(*domains):

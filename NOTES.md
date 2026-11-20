@@ -18,11 +18,11 @@ Corrections stay in the open tab. This supports checking alternatives and resett
 
 ## What is not ready
 
-Quote matching verifies the passage's existence. Completeness and interpretation still need editorial judgment. Two valid 60-task schedules exhausted the hosted eight-second proof budget. Cloudflare's trial hostname also rejected the assignment checker's default Python client.
+Quote matching verifies the passage's existence. Completeness and interpretation still need editorial judgment. Exact duration scaling and tighter workload bounds resolved both hosted timeout cases in local Docker tests. Very large coprime durations can still exhaust the proof budget. Cloudflare's trial hostname rejected the assignment checker's default Python client.
 
 ## What I would do next and a rough estimate
 
-Allow a day to prototype exact duration scaling and tighter scheduling bounds, test against the saved hard cases, and verify the final hostname with the original checker. A small labelled set of unseen plans would help measure missed tasks and unsupported findings.
+Allow half a day to repeat the solver regressions on the intended host and verify the final hostname with the original checker. A small labelled set of unseen plans would help measure missed tasks and unsupported findings.
 
 ## How I used AI tools
 

@@ -50,3 +50,22 @@ python scripts/measure_latency.py "$URL"
 python scripts/measure_latency.py "$URL" --wake
 (cd frontend && PLAN_REVIEWER_TEST_URL="$URL" npm test)
 ```
+
+## Stage 4C local solver follow-up
+
+The two requests were replayed on the committed Stage 4B solver before changing it. Both timed out. The table uses a Linux container limited to one CPU and 512 MiB. Baseline times include the local FastAPI test client. Updated times are medians of five warm loopback HTTP requests. Each updated schedule passed the original response checker.
+
+| Input | Baseline incumbent / proven lower bound | Baseline response | Updated proven finish | Updated response |
+|---|---|---|---|---|
+| 60 signoff and inspection tasks, 2 named owners, 1–11 days | 150 / 144 days | 503 in 8.053 s | 150 days | 200 in 0.042 s |
+| 60 job-shop tasks, 6 owners, 1–20 × 10²⁴ days | 159 / 123, both × 10²⁴ days | 503 in 8.008 s | 123 × 10²⁴ days | 200 in 0.085 s |
+
+**Exact units.** Fix the order of tasks for each owner in any feasible schedule. Adding edges for those orders gives an acyclic graph because every edge advances time. Starting each task as soon as its predecessors finish can only bring the finish forward. Those start times are longest-path sums of durations and hence multiples of their greatest common divisor. An optimal schedule therefore exists in those units, and multiplying back yields a feasible schedule in original days. The solver uses the reduced horizon for its numeric-range check and compares the restored finish with the original deadline.
+
+**A lower bound on completion.** For each task, calculate the longest dependency chain that must still run after it. Tasks with at least `q` days of such work must all finish by overall completion minus `q`. For each distinct `q`, bound the time to finish that group and add `q`. Both the longest path in the group and each owner's total workload give lower bounds.
+
+An owner's tasks on the chosen path partition time into windows before, between and after them. In each window let `h` be the path work that must fit, and `x` the off-path work assigned to that owner in the window. Tasks run without interruption, so `x` is a multiple of the GCD of the owner's off-path durations. The window must last at least `max(h, x)`. Twice this maximum is `h + x + |h − x|`, and the last term is at least the distance from `h` to the nearest multiple of the GCD. Summing over windows gives a lower bound using only path length, total owner workload and those distances. Path tasks assigned to the owner already count in both totals. Taking the integer ceiling preserves the inequality. CP-SAT still has to produce a matching schedule or prove a later optimum within the original eight seconds.
+
+**Remaining limit.** Increasing one task in the large fixture by one day removes the common divisor. Its reduced horizon still exceeds CP-SAT's numeric range. The exact fallback returned 503 in 8.019 s locally. Other combinatorial instances can also exceed the proof budget. The public trial continues to run Stage 4B.
+
+**Verification.** All 98 backend tests passed on Windows and in the capped Linux container, with one test-client deprecation warning on each. This includes 80 seeded small instances checked by exhaustive enumeration of shorter schedules, and 40 large-unit versions of those instances. The unmodified schedule contract checker and the readiness check with `--require-optimal` both passed against the locally running Docker service. All five 60-task readiness workloads completed.

@@ -5,11 +5,13 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path[:0] = [str(ROOT / "backend"), str(ROOT)]
 
 from app.main import app  # noqa: E402
 from app import scheduler  # noqa: E402
 from app import main  # noqa: E402
+from check_contract import validate_schedule_response  # noqa: E402
 
 
 TASK = {"id": "A", "name": "Book the hall", "owner": None, "duration_days": 1, "depends_on": []}
@@ -101,3 +103,15 @@ def test_expired_search_reports_no_completion_day(monkeypatch):
     response = TestClient(app).post("/api/schedule", json={"tasks": [TASK], "deadline_day": 1})
     assert response.status_code == 503
     assert "prove" in response.json()["detail"]
+
+
+@pytest.mark.parametrize(("fixture", "optimum"), [
+    ("signoff-windows", 150), ("large-job-shop", 123 * 10**24),
+])
+def test_proven_optimum_for_sixty_task_regressions(fixture, optimum):
+    body = json.loads((Path(__file__).parent / "fixtures" / f"{fixture}.json").read_text())
+    response = TestClient(app).post("/api/schedule", json=body)
+    assert response.status_code == 200
+    result = response.json()
+    assert validate_schedule_response(body, result) == []
+    assert result["end_day"] == optimum
