@@ -6,27 +6,27 @@
 
 ## What I did
 
-Nora needs a finish date she can defend. A greedy scheduler can start a long job just when a short handoff would unlock someone else's work. CP-SAT compares task orders subject to prerequisites and one job per owner. Exact duration scaling and bounds on work that fits between commitments help it prove the earliest finish. The service names the tasks in a dependency loop before invoking the solver.
+I made Nora's deadline decision the starting point. She can see the earliest finish, inspect a highlighted passage, correct a task and recalculate. Each correction keeps the original quotation so she can compare her change with the plan.
 
-The review command uses GPT-5.4 to reconcile tables with later prose. A smaller model accepted Harbour Run's instruction to use day 99 and missed an insurance dependency. The saved GPT-5.4 review identifies the day-30 event, the conflicting five-week timetable and the approval loop. The plan is passed separately from instructions. Code checks types, IDs and references, then independently matches each quotation to the source, preserving case and collapsing whitespace.
+I chose CP-SAT because a greedy task order can delay a short handoff that would free another owner to start work. The solver considers alternative orders and reports a finish day only when it can prove optimality. Shared duration factors and bounds on each owner's work help it reach that proof.
 
-The interface leads with the deadline decision. Nora can open a highlighted passage, correct the extraction and recalculate. A correction keeps its original evidence. The web application serves saved reviews without a model key.
+I chose GPT-5.4 after a smaller model followed Harbour Run's embedded day-99 instruction and missed an insurance dependency. The saved review identifies day 30 and the approval loop. I required a separate check on the model's output. The review command validates types, IDs and dependencies, then matches each quotation to the plan, preserving case and collapsing whitespace.
 
 ## What I cut and why
 
-Corrections stay in the open tab. This supports checking alternatives and resetting the review without introducing accounts, a database or shared approval state. One service serves the page and API.
+I kept corrections in the open tab. Nora can try an alternative and reset it. Shared edits would need storage and rules about whose changes take precedence. Serving saved reviews also keeps model calls out of the web request.
 
 ## What is not ready
 
-Quote matching establishes that a passage exists. Nora still needs to check completeness and interpretation. Extremely large durations with no common factor can exhaust the eight-second proof budget. The API then returns HTTP 503 without a completion estimate.
+A matching quotation establishes that the passage exists. Nora still has to judge its meaning and spot omissions. A valid schedule with very large durations and no shared factor can exhaust the eight-second proof budget. The API returns HTTP 503 in that case.
 
 ## What I would do next and a rough estimate
 
-Allow half a day to label a small set of unseen plans and measure missed tasks, conflicting dates and unsupported findings.
+I would spend half a day labelling a small set of unseen plans and comparing their reviews for missed tasks, conflicting dates and unsupported findings.
 
 ## How I used AI tools
 
-Codex implemented, tested and refined the application under human-directed requirements, architectural constraints and milestone reviews. Checks included exhaustive small schedules, mocked provider failures, live review generation, browser workflows and the supplied contract scripts.
+I set the requirements and architectural constraints, directed the work in stages and evaluated the reported results at each milestone. Codex generated and refined the code and tests. It ran the exhaustive small-schedule comparisons, provider failure tests, live review generation, browser tests and contract checks.
 
 ## Environment variables my review command needs
 
