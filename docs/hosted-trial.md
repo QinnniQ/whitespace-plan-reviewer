@@ -1,6 +1,6 @@
 # Stage 4B hosted trial
 
-**Decision B.** Cloudflare ran the full Docker application. Scheduler proof time and compatibility with the assignment checker both block submission. The [public trial](https://whitespace-plan-reviewer-trial.nicholai-gay.workers.dev) is available for browser testing.
+**Stage 4B decision B.** Cloudflare ran the full Docker application. Scheduler proof time and compatibility with the assignment checker blocked submission at that stage. The [trial endpoint](https://whitespace-plan-reviewer-trial.nicholai-gay.workers.dev) is available for browser testing.
 
 ## Deployment
 
@@ -66,6 +66,34 @@ The two requests were replayed on the committed Stage 4B solver before changing 
 
 An owner's tasks on the chosen path partition time into windows before, between and after them. In each window let `h` be the path work that must fit, and `x` the off-path work assigned to that owner in the window. Tasks run without interruption, so `x` is a multiple of the GCD of the owner's off-path durations. The window must last at least `max(h, x)`. Twice this maximum is `h + x + |h − x|`, and the last term is at least the distance from `h` to the nearest multiple of the GCD. Summing over windows gives a lower bound using only path length, total owner workload and those distances. Path tasks assigned to the owner already count in both totals. Taking the integer ceiling preserves the inequality. CP-SAT still has to produce a matching schedule or prove a later optimum within the original eight seconds.
 
-**Remaining limit.** Increasing one task in the large fixture by one day removes the common divisor. Its reduced horizon still exceeds CP-SAT's numeric range. The exact fallback returned 503 in 8.019 s locally. Other combinatorial instances can also exceed the proof budget. The public trial continues to run Stage 4B.
+**Remaining limit.** Increasing one task in the large fixture by one day removes the common divisor. Its reduced horizon still exceeds CP-SAT's numeric range. The exact fallback returned 503 in 8.019 s locally. Other combinatorial instances can also exceed the proof budget. The public trial still ran Stage 4B during these local checks.
 
 **Verification.** All 98 backend tests passed on Windows and in the capped Linux container, with one test-client deprecation warning on each. This includes 80 seeded small instances checked by exhaustive enumeration of shorter schedules, and 40 large-unit versions of those instances. The unmodified schedule contract checker and the readiness check with `--require-optimal` both passed against the locally running Docker service. All five 60-task readiness workloads completed.
+
+## Stage 4D custom domain
+
+[WhiteSpace Plan Reviewer](https://whitespace.nickcloud.dev) serves the Stage 4C application from commit `3e0403f`. The existing `whitespace-plan-reviewer-trial` Worker routes both hostnames to the same named Container. Worker version `2137ca4e-ac6d-433e-ae4c-267fa5e52a06` received 100% of traffic. The London placement reported the new image digest `sha256:b99d0746a562cc655395bffcc9755b9eadb6bbb73c049210ecf2b77fb5d87b30`, 1 vCPU, 512 MiB memory and 2 GB disk. The scheduler file in that image matched the checked-out source byte for byte. The image had no OpenAI key.
+
+**Updating this deployment.** Deploy from the repository root with Docker running and an authenticated Wrangler session using `npx wrangler@4.166.0 deploy`. A running Container can continue serving the old digest after Worker activation. In this deployment the previous image returned 503 for the signoff fixture. After five idle minutes, the old instance stopped. On wake, the instance API reported the new digest and both regression fixtures passed. Compare the running digest and execute the strict readiness check before announcing a future update.
+
+**Domain and checker.** The zone DNS inventory, Worker routes, Worker custom domains and Pages projects showed no conflict. Wrangler attached the exact hostname as a Custom Domain. The stock Python client then received Cloudflare 1010. The zone configuration rule `WhiteSpace schedule POST · Browser Integrity Check` disables only Browser Integrity Check when all three terms below match. [Cloudflare Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+
+```text
+http.host eq "whitespace.nickcloud.dev" and http.request.uri.path eq "/api/schedule" and http.request.method eq "POST"
+```
+
+**Public verification, 20 November 2026**
+
+| Check | Result |
+|---|---|
+| Original checker | The unchanged `python check_contract.py schedule https://whitespace.nickcloud.dev` passed over HTTPS on Linux and Windows with Python's default client. The checker file matches the assignment baseline. |
+| Plans and corrections | Spring Market day 18, edited day 28, reset day 18. Lantern Festival day 52 against day 45. Harbour Run named the circular approval and insurance dependency. All three saved reviews passed the review contract and all 51 source quotations matched. |
+| Browser | All nine Edge tests passed on the trial and again on the custom domain, including a real 422 and retry. A separate 390 × 844 touch-viewport run used live responses for plan selection, highlighting, edit and reset, with no page overflow. |
+| Difficult schedules | Signoffs finished on day 150 in 405 ms. The scaled job shop finished on day 123 × 10²⁴ in 624 ms. Both responses passed the original scheduling rules. Three simultaneous 60-task job shops returned verified optima in 653–711 ms. |
+| Warm timing | Five plan-list reads took 151–203 ms. Five example schedule POSTs took 174–232 ms round trip, including 6.62–10.72 ms in the backend scheduling function. |
+| Wake from confirmed sleep | The first example POST returned day 9 in 3.674 s, including 58.51 ms in scheduling. The other 3.62 s included startup, routing, network and response handling. |
+| Proof limit | Adding one day to a huge duration removed the common divisor. The public API returned the explicit proof-timeout 503 in 8.185 s. |
+
+Incoming public traffic repeatedly reset the five-minute idle period. A temporary Worker version shortened that interval to 30 seconds on the same Container. Cloudflare reported a stop at 20:55:31 UTC. The five-minute production version was restored to 100% traffic, and the instance still reported `stopped` immediately before the measured POST. The new placement reported the expected digest and running status at 20:55:43 UTC.
+
+Use the public checks in the [README](../README.md). For the browser suite, set `PLAN_REVIEWER_TEST_URL=https://whitespace.nickcloud.dev` and run `npm test` from `frontend/` with the documented browser prerequisites. To repeat the wake measurement, allow five idle minutes, confirm the instance reports `stopped` in Cloudflare and run `python scripts/measure_latency.py https://whitespace.nickcloud.dev --wake` before other traffic reaches the Worker.

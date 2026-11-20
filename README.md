@@ -1,5 +1,7 @@
 # Plan reviewer
 
+[Open the deployed WhiteSpace Plan Reviewer](https://whitespace.nickcloud.dev). The page serves the three saved reviews and recalculates corrections without a model key.
+
 This is the take-home assignment for the Artificial Intelligence Engineer role at WhiteSpace. It is sized for about two hours of work, deployment included, and you have one day to hand it in. Tell us in your note how long you spent. We would rather see good choices than more hours.
 
 ## The story
@@ -73,7 +75,17 @@ Any existing destination keeps its previous contents.
 
 The `Dockerfile` builds one container that serves the page and the API on `$PORT`, 8000 by default.
 
-[Deployment readiness](docs/deployment-readiness.md) records local Docker verification and sizing. The [hosted trial](docs/hosted-trial.md) records public browser tests, scheduling benchmarks and submission blockers.
+[Deployment readiness](docs/deployment-readiness.md) records Docker verification and sizing. The [final deployment report](docs/hosted-trial.md#stage-4d-custom-domain) records the production checks and timing measurements.
+
+To reproduce the public checks from the repository root:
+
+```sh
+python check_contract.py schedule https://whitespace.nickcloud.dev
+python scripts/check_readiness.py https://whitespace.nickcloud.dev --require-optimal
+python scripts/measure_latency.py https://whitespace.nickcloud.dev
+```
+
+The readiness check compares the served plans, JSON and quotations with the local files, then validates the sample and regression schedules. An extremely large job with coprime durations can still exceed the eight-second proof budget and return HTTP 503.
 
 ## What we ask
 

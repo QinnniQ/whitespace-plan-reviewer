@@ -1,5 +1,7 @@
 # Stage 4A deployment decision
 
+The [Stage 4D report](hosted-trial.md#stage-4d-custom-domain) records the deployed custom domain, image and public verification. The measurements below are from the earlier local feasibility study.
+
 **Recommendation, 20 November 2026.** Activate Workers Paid when ready for the hosted trial. The existing Linux/amd64 image serves the complete application. The Containers page for the account containing `nickcloud.dev` showed **Purchase Workers Paid**. Its existing subscriptions do not currently grant Containers access. Wrangler 4.166.0 was available through npm, but its cached OAuth login had expired. A fresh login and a subscription are separate requirements.
 
 ## Proposed Cloudflare service

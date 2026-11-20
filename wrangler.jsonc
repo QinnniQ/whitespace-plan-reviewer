@@ -2,6 +2,9 @@
   "name": "whitespace-plan-reviewer-trial",
   "workers_dev": true,
   "preview_urls": false,
+  "routes": [
+    { "pattern": "whitespace.nickcloud.dev", "custom_domain": true }
+  ],
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-11-20",
   "containers": [{
