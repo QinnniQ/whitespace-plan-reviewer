@@ -23,20 +23,31 @@ async def scheduling_timeout(request, exc):
 def list_plans():
     plans = []
     for path in sorted((DATA / "plans").glob("*.md"), reverse=True):
-        title = next((line.lstrip("# ").strip() for line in path.read_text().splitlines() if line.startswith("#")), path.stem)
+        title = next((line.lstrip("# ").strip() for line in path.read_text(encoding="utf-8").splitlines() if line.startswith("#")), path.stem)
         plans.append({"id": path.stem, "title": title})
     return plans
 
 
 @app.get("/api/plans/{plan_id}")
 def get_plan(plan_id: str):
-    text = (DATA / "plans" / f"{plan_id}.md").read_text()
-    review = json.loads((DATA / "reviews" / f"{plan_id}.json").read_text())
+    text = (DATA / "plans" / f"{plan_id}.md").read_text(encoding="utf-8")
+    review = json.loads((DATA / "reviews" / f"{plan_id}.json").read_text(encoding="utf-8"))
+    result = None
+    schedule_error = None
+    if review["deadline_day"] is not None:
+        if len(review["tasks"]) > 60:
+            schedule_error = "Scheduling supports up to 60 tasks."
+        else:
+            try:
+                result = schedule(review["tasks"], review["deadline_day"])
+            except ScheduleTimeout:
+                schedule_error = "The calculation timed out. Try again to check the earliest finish."
     return {
         "id": plan_id,
         "text": text,
         "review": review,
-        "schedule": schedule(review["tasks"], review["deadline_day"]),
+        "schedule": result,
+        "schedule_error": schedule_error,
     }
 
 

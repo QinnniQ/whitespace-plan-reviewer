@@ -8,9 +8,22 @@ A town council's events officer approves the plans that volunteer committees sen
 
 ## What you get
 
-A small app that reviews a plan in three steps: a model reads it and lists its tasks and findings, code schedules the tasks, and a page shows the result. It works, but it does everything badly.
+A small app that reviews a plan in three steps: a model reads it and lists its tasks and findings, code schedules the tasks, and a page shows the result.
 
-The three sample plans are in `data/plans/`. The page shows their stored reviews from `data/reviews/`, so the app runs without an API key. The backend is FastAPI; the frontend is React with no styling.
+The three sample plans are in `data/plans/`. The React interface reads their stored reviews through FastAPI and runs without an API key.
+
+## Reviewing a plan
+
+Select an event to see its earliest finish and deadline. Use the book beside a
+task or **View in plan** beside a finding to highlight the first matching passage
+in the original Markdown. Select a task name, the pencil beside the deadline, or
+**Edit finding** to make a correction. Task and deadline changes recalculate the
+schedule. A plan with an unknown deadline needs a day before it can be scheduled.
+
+Corrections stay in memory for each plan in the open tab. Switching plans keeps
+them. Reloading the page clears them. **Reset to original review** restores the
+saved version for the selected plan. The original quotations and files in
+`data/reviews/` are preserved.
 
 ## Run it
 
@@ -38,6 +51,11 @@ cd backend && ../.venv/bin/uvicorn app.main:app --port 8000
 ```sh
 .venv/bin/pytest backend/tests
 ```
+
+For browser tests, install the backend and frontend dependencies above, then run
+`npx playwright install chromium` and `npm test` from `frontend/`. This builds
+the production interface and runs it against a temporary local backend.
+Set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge browser instead.
 
 To generate a review, set `OPENAI_API_KEY` in your environment. The default model is
 `gpt-5.4`. Optionally set `REVIEW_MODEL` to an OpenAI Chat Completions model with

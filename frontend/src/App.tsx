@@ -1,89 +1,75 @@
 import { useEffect, useState } from 'react';
+import { Decision } from './Decision';
+import { Icon } from './Icon';
+import { ReviewDetails } from './ReviewDetails';
+import { ReviewDialog, type DialogState } from './ReviewDialog';
+import { message, requestJson, type Plan, type PlanSummary, type Review } from './review';
+import { useSchedule } from './useSchedule';
+import './style.css';
 
-type PlanSummary = {
-  id: string;
-  title: string;
-};
+function useResource<T>(url: string) {
+  const [version, setVersion] = useState(0);
+  const [state, setState] = useState<{ data?: T; error?: string }>({});
+  useEffect(() => {
+    const controller = new AbortController();
+    setState({});
+    requestJson<T>(url, { signal: controller.signal }).then(data => {
+      if (!controller.signal.aborted) setState({ data });
+    }).catch(error => {
+      if (!controller.signal.aborted) setState({ error: message(error) });
+    });
+    return () => controller.abort();
+  }, [url, version]);
+  return { ...state, retry: () => setVersion(v => v + 1) };
+}
 
-type Plan = {
-  id: string;
-  text: string;
-  review: {
-    deadline_day: number | null;
-    tasks: {
-      id: string;
-      name: string;
-      owner: string | null;
-      duration_days: number;
-      depends_on: string[];
-      quote: string;
-    }[];
-    findings: { title: string; detail: string; quote: string }[];
-  };
-  schedule: {
-    schedule: { id: string; start_day: number; end_day: number }[];
-    meets_deadline: boolean;
-  };
-};
+function Workspace({ title, plan, correction, save }: {
+  title: string; plan: Plan; correction?: Review; save: (value?: Review) => void;
+}) {
+  const review = correction ?? plan.review;
+  const { calculation, retry } = useSchedule(plan, review);
+  const [dialog, setDialog] = useState<DialogState | null>(null);
+  const owners = new Set(review.tasks.map(t => t.owner).filter(v => v !== null));
+  return <>
+    <div className="page-heading"><div><div className="eyebrow">Plan review</div><h1>{title}</h1>
+      <p>{review.tasks.length} tasks <i>·</i> {owners.size} {owners.size === 1 ? 'owner' : 'owners'} <i>·</i> {correction ? 'Edited in this tab' : 'Original review'}</p>
+    </div><button onClick={() => setDialog({ kind: 'source', title })}><Icon name="book" />Original plan</button></div>
+    <Decision review={review} calculation={calculation} original={plan.schedule} edited={!!correction}
+      editDeadline={() => setDialog({ kind: 'deadline' })} retry={retry} />
+    {correction && <div className="correction-note"><span>Corrections apply only in this tab.</span><button className="text-action" onClick={() => save()}><Icon name="reset" />Reset to original review</button></div>}
+    <ReviewDetails review={review} original={plan.review} result={calculation.result} open={setDialog} />
+    {dialog && <ReviewDialog state={dialog} source={plan.text} review={review} original={plan.review} close={() => setDialog(null)}
+      save={next => save(JSON.stringify(next) === JSON.stringify(plan.review) ? undefined : next)} />}
+  </>;
+}
+
+function PlanPage({ selected, correction, save }: { selected: PlanSummary; correction?: Review; save: (value?: Review) => void }) {
+  const { data, error, retry } = useResource<Plan>('/api/plans/' + encodeURIComponent(selected.id));
+  if (!data) return <div className="panel notice" role="status"><h1>{selected.title}</h1><p>{error || 'Opening the plan…'}</p>{error && <button onClick={retry}>Try again</button>}</div>;
+  return <Workspace title={selected.title} plan={data} correction={correction} save={save} />;
+}
 
 export default function App() {
-  const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const { data: plans, error, retry } = useResource<PlanSummary[]>('/api/plans');
   const [selectedId, setSelectedId] = useState('');
-  const [plan, setPlan] = useState<Plan | null>(null);
-
-  useEffect(() => {
-    fetch('/api/plans')
-      .then((response) => response.json())
-      .then((items: PlanSummary[]) => {
-        setPlans(items);
-        if (items.length > 0) setSelectedId(items[0].id);
-      });
-  }, []);
-
-  useEffect(() => {
-    setPlan(null);
-    if (!selectedId) return;
-    fetch(`/api/plans/${selectedId}`)
-      .then((response) => response.json())
-      .then(setPlan);
-  }, [selectedId]);
-
-  return (
-    <>
-      <label>
-        Plan{' '}
-        <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-          {plans.map((item) => (
-            <option key={item.id} value={item.id}>{item.title}</option>
-          ))}
-        </select>
-      </label>
-      {plan && (
-        <>
-          <pre>{plan.text}</pre>
-          <pre>{JSON.stringify(plan.review, null, 2)}</pre>
-          <table>
-            <thead>
-              <tr><th>Name</th><th>Owner</th><th>Days</th><th>Start</th><th>End</th></tr>
-            </thead>
-            <tbody>
-              {plan.review.tasks.map((task) => {
-                const scheduled = plan.schedule.schedule.find((entry) => entry.id === task.id);
-                return (
-                  <tr key={task.id}>
-                    <td>{task.name}</td>
-                    <td>{task.owner}</td>
-                    <td>{task.duration_days}</td>
-                    <td>{scheduled?.start_day}</td>
-                    <td>{scheduled?.end_day}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p>Meets deadline: {plan.schedule.meets_deadline ? 'yes' : 'no'}</p>
-        </>
-      )}
-    </>
-  );
+  const selected = plans?.find(plan => plan.id === selectedId) ?? plans?.[0];
+  const [corrections, setCorrections] = useState<Record<string, Review | undefined>>({});
+  return <>
+    <a className="skip" href="#review-content">Skip to review</a>
+    <header className="topbar"><div className="brand"><span className="brand-mark"><Icon name="book" size={22} /></span>Plan reviewer</div>
+      <span className="council">Pellerby Town Council</span></header>
+    <div className="shell">
+      <aside className="sidebar"><nav aria-label="Event plans"><div className="nav-heading"><span className="eyebrow">Event plans</span><span>{plans?.length ?? '—'}</span></div>
+        {plans?.map(plan => <button key={plan.id} aria-current={selected?.id === plan.id ? 'page' : undefined} onClick={() => setSelectedId(plan.id)}>
+          <Icon name="file" /><span>{plan.title.replace(/^Pellerby /, '')}</span></button>)}</nav>
+        <label className="mobile-picker">Event plan<select value={selected?.id ?? ''} onChange={e => setSelectedId(e.target.value)}>
+          {plans?.map(plan => <option key={plan.id} value={plan.id}>{plan.title}</option>)}</select></label>
+        <div className="profile"><span className="avatar">NC</span><div>Nora Calloway<small>Events officer</small></div></div>
+      </aside>
+      <main id="review-content" tabIndex={-1}>{selected ? <PlanPage key={selected.id} selected={selected} correction={corrections[selected.id]}
+        save={value => setCorrections(previous => ({ ...previous, [selected.id]: value }))} /> :
+        <div className="panel notice" role="status"><h1>Event plans</h1><p>{error || (plans ? 'There are no event plans to review.' : 'Loading event plans…')}</p>{error && <button onClick={retry}>Try again</button>}</div>}
+      </main>
+    </div>
+  </>;
 }

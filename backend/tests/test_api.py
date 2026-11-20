@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -8,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.main import app  # noqa: E402
 from app import scheduler  # noqa: E402
+from app import main  # noqa: E402
 
 
 TASK = {"id": "A", "name": "Book the hall", "owner": None, "duration_days": 1, "depends_on": []}
@@ -17,6 +19,28 @@ def test_plans_are_listed():
     response = TestClient(app).get("/api/plans")
     assert response.status_code == 200
     assert {plan["id"] for plan in response.json()} == {"spring-market", "lantern-festival", "harbour-run"}
+
+
+@pytest.mark.parametrize("deadline", [None, 10])
+def test_plan_can_be_opened_without_a_completed_schedule(tmp_path, monkeypatch, deadline):
+    monkeypatch.setattr(main, "DATA", tmp_path)
+    (tmp_path / "plans").mkdir()
+    (tmp_path / "reviews").mkdir()
+    (tmp_path / "plans/demo.md").write_text("# Café", encoding="utf-8")
+    review = {"deadline_day": deadline, "tasks": [TASK], "findings": []}
+    (tmp_path / "reviews/demo.json").write_text(json.dumps(review), encoding="utf-8")
+
+    def timeout(tasks, requested_deadline):
+        assert requested_deadline is not None
+        raise scheduler.ScheduleTimeout()
+
+    monkeypatch.setattr(main, "schedule", timeout)
+    response = TestClient(app).get("/api/plans/demo")
+    assert response.status_code == 200
+    assert response.json()["text"] == "# Café"
+    assert response.json()["review"] == review
+    assert response.json()["schedule"] is None
+    assert bool(response.json()["schedule_error"]) == (deadline is not None)
 
 
 @pytest.mark.parametrize("body", [
