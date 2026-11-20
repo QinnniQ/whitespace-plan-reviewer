@@ -5,5 +5,10 @@
 **/*.pyc
 **/.pytest_cache
 out/
-.env
+**/.env
+**/.env.*
+**/.dev.vars*
+**/.wrangler
+**/test-results
+**/playwright-report
 .git

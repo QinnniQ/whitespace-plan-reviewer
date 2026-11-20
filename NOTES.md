@@ -2,29 +2,32 @@
 
 ## Time spent
 
+[To confirm before submission: ___ hours of hands-on direction and review; ___ hours of automated execution and environment troubleshooting.]
+
 ## What I did
 
-I used GPT-5.4 for structured extraction. On the sample plans it reconciled the
-task tables with later paragraphs, including prerequisites that form a cycle.
-The CLI checks JSON types, IDs, references, and source quotations before saving.
-It asks for a fresh extraction once if these checks fail.
+Nora needs a finish date she can defend. A greedy scheduler can keep someone busy on a long task just when a short handoff would unlock another person's work. CP-SAT considers alternative orders. Each task occupies a fixed interval, each prerequisite constrains its start, and each named owner can work on one task at a time. The service reports an earliest finish only after proving it. It names the tasks in a dependency loop.
+
+The review command uses GPT-5.4 to reconcile tables with later prose. An earlier smaller-model run accepted Harbour Run's instruction to use day 99 and missed an insurance dependency. The saved GPT-5.4 review identifies the day-30 event, the conflicting five-week timetable and the circular approval requirement. The plan is passed separately from the review instructions. Code checks types, IDs, references and each quotation against the original text, preserving case and collapsing whitespace. A structurally valid answer can still contain an invented quotation or misinterpret a genuine one.
+
+The interface leads with the deadline decision. Nora can open a highlighted passage, correct the extraction and recalculate. A correction keeps its original evidence. The web application serves saved reviews without a model key.
 
 ## What I cut and why
 
+Corrections stay in the open tab. This supports checking alternatives and resetting the review without introducing accounts, a database or shared approval state. One service serves the page and API.
+
 ## What is not ready
 
-An exact quotation proves that the passage exists. Interpreting it and finding
-every relevant passage still depend on the model. I checked the three saved
-reviews against their plans, including the injected instruction in Harbour Run.
+Quote matching verifies the passage's existence. Completeness and interpretation still need editorial judgment. Difficult schedules can exhaust the eight-second search budget and return HTTP 503. Hosted cold-start and concurrent-request latency still need measurement.
 
 ## What I would do next and a rough estimate
 
+Allow half a day to measure cold and warm requests on the chosen host and build a small labelled set of unseen plans to test missed tasks, conflicting dates and unsupported findings.
+
 ## How I used AI tools
 
-Codex implemented the reviewer and tests. Checks included mocked provider failures,
-the assignment's contract checker, and fresh CLI runs against OpenAI.
+Codex implemented, tested and refined the application under human-directed requirements, architectural constraints and milestone reviews. Checks included exhaustive small schedules, mocked provider failures, live review generation, browser workflows and the supplied contract scripts.
 
 ## Environment variables my review command needs
 
-`OPENAI_API_KEY` supplies the credential. `REVIEW_MODEL` optionally overrides
-`gpt-5.4` with a Chat Completions model supporting strict JSON Schema.
+`OPENAI_API_KEY` is required for generation. `REVIEW_MODEL` optionally selects another OpenAI Chat Completions model with strict structured-output support.

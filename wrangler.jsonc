@@ -1,0 +1,16 @@
+{
+  "name": "whitespace-plan-reviewer",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-11-20",
+  "containers": [{
+    "class_name": "PlanReviewer",
+    "scheduling_policy": "durable_object",
+    "images": { "base": { "dockerfile": "./Dockerfile" } }
+  }],
+  "durable_objects": {
+    "bindings": [{ "name": "REVIEWER", "class_name": "PlanReviewer" }]
+  },
+  "exports": {
+    "PlanReviewer": { "type": "durable-object", "storage": "sqlite" }
+  }
+}

@@ -73,6 +73,8 @@ Any existing destination keeps its previous contents.
 
 The `Dockerfile` builds one container that serves the page and the API on `$PORT`, 8000 by default.
 
+[Deployment readiness](docs/deployment-readiness.md) records local Docker verification, Cloudflare sizing and costs, and the remaining hosted checks.
+
 ## What we ask
 
 You may change anything, the stack included, as long as the two contracts hold. A good result does this for the events officer:
