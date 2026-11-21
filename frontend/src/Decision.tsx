@@ -2,7 +2,7 @@ import { Icon } from './Icon';
 import type { Review, Schedule } from './review';
 import type { Calculation } from './useSchedule';
 
-function outcome(review: Review, { result, pending, error }: Calculation) {
+export function assessDeadline(review: Review, { result, pending, error }: Calculation) {
   const deadline = review.deadline_day;
   if (error) return { label: 'Schedule unavailable', title: 'The earliest finish is unknown.', detail: error, warning: true };
   if (deadline === null) return { label: 'Deadline not stated', title: 'A deadline is needed.', detail: 'Enter the deadline day to calculate the schedule and check whether the plan can meet it.' };
@@ -30,11 +30,10 @@ function outcome(review: Review, { result, pending, error }: Calculation) {
       : `Given the prerequisites and each owner’s availability, ${lastTask ? '“' + lastTask.name + '” finishes' : 'the work finishes'} on day ${result.end_day}.`, warning: true };
 }
 
-export function Decision({ review, calculation, original, edited, editDeadline, retry }: {
-  review: Review; calculation: Calculation; original: Schedule | null; edited: boolean;
+export function Decision({ review, calculation, info, original, edited, editDeadline, retry }: {
+  review: Review; calculation: Calculation; info: ReturnType<typeof assessDeadline>; original: Schedule | null; edited: boolean;
   editDeadline: () => void; retry: () => void;
 }) {
-  const info = outcome(review, calculation);
   const end = calculation.result?.end_day;
   return <section className={'decision panel' + (info.warning ? ' attention' : '')} aria-label="Deadline assessment">
     <div className="assessment" aria-live="polite">
