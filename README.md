@@ -6,7 +6,7 @@ Plan Reviewer helps a council events officer decide whether an event can be read
 
 Spring Market finishes on day 18 against a day-21 deadline. Lantern Festival finishes seven days late. Harbour Run has a circular dependency between course approval and event insurance.
 
-Choose **View in plan** beside a task or finding to inspect its source quotation when one is available. Task names, owners, durations, prerequisites and the deadline can all be corrected. Saving a schedule edit recalculates the result. Corrections stay in the open tab and retain their original quotations. **Reset to original review** restores the saved values.
+Choose Quote beside a task or View in plan beside a finding to inspect its source quotation. Task names, owners, durations, prerequisites and the deadline can all be corrected. Saving a schedule edit recalculates the result. Corrections stay in the open tab and retain their original quotations. **Reset to original review** restores the saved values.
 
 ## Architecture
 
